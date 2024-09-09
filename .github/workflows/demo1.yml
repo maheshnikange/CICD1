@@ -29,3 +29,54 @@ jobs:
       run: |
         python manage.py migrate
         python manage.py test
+    - name: Deploy to DigitalOcean
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.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
+         }}
+        SSH_HOST: ${{ secrets.64.227.175.172 }}
+        SSH_USER: ${{ secrets.root }}
+      run: |
+        ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
+            cd /root/democicd/CICD1/myproject
+            git pull origin main
+            source demoenv/bin/activate
+            pip install -r requirements.txt
+            python manage.py migrate
+            sudo systemctl restart gunicorn
+            sudo systemctl restart nginx
+          EOF
