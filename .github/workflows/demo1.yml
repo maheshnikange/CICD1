@@ -1,13 +1,3 @@
-name: Django CI
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -29,13 +19,20 @@ jobs:
       run: |
         python manage.py migrate
         python manage.py test
+
+    - name: Set up SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+    
     - name: Deploy to DigitalOcean
       env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         SSH_HOST: ${{ secrets.SSH_HOST }}
         SSH_USER: ${{ secrets.SSH_USER }}
       run: |
-        ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
           cd /root/democicd/CICD1/myproject
           git pull origin main
           source demoenv/bin/activate
