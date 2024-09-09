@@ -1,12 +1,9 @@
-name: Django CI
+name: CI/CD Pipeline
 
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
+      - main  # Trigger the workflow on a push to the 'main' branch
 
 jobs:
   test:
@@ -29,3 +26,32 @@ jobs:
       run: |
         python manage.py migrate
         python manage.py test
+
+    - name: Set up SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Test SSH Connection
+      env:
+        SSH_USER: ${{ secrets.SSH_USER }}
+        SSH_HOST: ${{ secrets.SSH_HOST }}
+      run: |
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "echo 'SSH connection successful'"
+
+    - name: Deploy to DigitalOcean
+      env:
+        SSH_USER: ${{ secrets.SSH_USER }}
+        SSH_HOST: ${{ secrets.SSH_HOST }}
+      run: |
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
+          cd /root/democicd/CICD1/myproject
+          git pull origin main
+          source demoenv/bin/activate
+          pip install -r requirements.txt
+          python manage.py migrate
+          sudo systemctl restart gunicorn
+          sudo systemctl restart nginx
+        EOF
